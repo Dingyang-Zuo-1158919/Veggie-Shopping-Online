@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+
+<header class="bg-primary text-white text-center py-4">
+    <h1>Welcome to Fresh Harvest Veggies</h1>
+    {% if session['username'] %}
+    <p>Hello, {{ session['username'] }}!</p>
+    {% endif %}
+</header>
+
+<section class="container mt-5">
+    <!-- Dropdown Menu for Selecting Veggies or Premade Boxes -->
+    <div class="text-center mb-4">
+        <label for="itemTypeSelect">Choose an item type:</label>
+        <select id="itemTypeSelect" class="form-control w-25 mx-auto">
+            <option value="veggies" {% if selected_type=='veggies' %}selected{% endif %}>Vegetables</option>
+            <option value="boxes" {% if selected_type=='boxes' %}selected{% endif %}>Premade Boxes</option>
+        </select>
+    </div>
+
+    <!-- Vegetables Section with Pagination -->
+    <div id="veggiesSection" {% if selected_type !='veggies' %}class="hidden" {% endif %}>
+        {% if user_type == 'staff' %}
+        <h2 class="mt-4 mb-3">Vegetable Stocks</h2>
+        {% else %}
+        <h2 class="mt-4 mb-3">Available Vegetables</h2>
+        {% endif %}
+        <div class="row">
+            {% for veggie in veggies_paginated %}
+            <div class="col-md-4">
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ veggie[0] }}</h5>
+                        <!-- Display stock quantity for staff user -->
+                        {% if user_type == 'staff' %}
+                        <div class="border-0 shadow-sm p-2 mb-3">
+                            <p class="font-weight-bold mb-1" style="font-size: 0.9rem;">Available Stock:</p>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Weight:</span>
+                                    <span
+                                        class="badge {{ 'badge-danger' if veggie.weight_qty == 0 else 'badge-primary' }} badge-pill">{{
+                                        veggie.weight_qty | round(0,
+                                        'floor') }} kg</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Unit:</span>
+                                    <span
+                                        class="badge {{ 'badge-danger' if veggie.unit_qty == 0 else 'badge-primary' }} badge-pill">{{
+                                        veggie.unit_qty | round(0, 'floor')
+                                        }} units</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Pack:</span>
+                                    <span
+                                        class="badge {{ 'badge-danger' if veggie.pack_qty == 0 else 'badge-primary' }} badge-pill">{{
+                                        veggie.pack_qty | round(0, 'floor')
+                                        }} packs</span>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        {% if user_type in ['customer', 'corporate_customer'] %}
+                        <form method="POST" action="{{ url_for('add_to_order') }}"
+                            class="d-flex flex-column align-items-start">
+                            <div class="form-group d-flex align-items-center mb-2">
+                                <label for="purchase_type" class="mb-0 mr-2">Type:</label>
+                                <select name="purchase_type" class="form-control"
+                                    onchange="updatePrice(this, '{{ veggie[0] }}')">
+                                    {% if veggie.weight_qty > 0 %}
+                                    <option value="weight" selected>Weight</option>
+                                    {% endif %}
+                                    {% if veggie.unit_qty > 0 %}
+                                    <option value="unit" {% if veggie.weight_qty==0 and loop.index==1 %}selected{% endif
+                                        %}>Unit</option>
+                                    {% endif %}
+                                    {% if veggie.pack_qty > 0 %}
+                                    <option value="pack" {% if veggie.weight_qty==0 and veggie.unit_qty==0 %}selected{%
+                                        endif %}>Pack</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-2">
+                                <input type="hidden" name="item_type" value="veggie">
+                                <input type="hidden" name="item_name" value="{{ veggie[0] }}">
+                                <span class="price-display">Unit Price: <span
+                                        id="price-{{ veggie[0] }}">$2</span></span>
+                            </div>
+
+                            <div class="form-group d-flex align-items-center">
+                                <span class="mr-2">Qty:</span>
+                                <input type="number" name="quantity" value="1" min="1" class="form-control"
+                                    style="width: 80px;">
+                                <button type="submit" class="btn btn-success btn-sm ml-2">Add to Cart</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Login Prompt for Users Not Logged In -->
+        {% if user_type not in ['customer', 'corporate_customer', 'staff'] %}
+        <div class="text-center mt-4">
+            <p><a href="{{ url_for('login') }}" class="btn btn-info">Login to Order</a></p>
+        </div>
+        {% endif %}
+
+        <!-- Pagination for Vegetables -->
+        <nav aria-label="Veggies pagination">
+            <ul class="pagination justify-content-center">
+                {% if veggies_page > 1 %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="{{ url_for('home', veggies_page=veggies_page - 1, type='veggies') }}">Previous</a>
+                </li>
+                {% endif %}
+
+                {% for page in range(1, total_veggies_pages + 1) %}
+                <li class="page-item {% if page == veggies_page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('home', veggies_page=page, type='veggies') }}">{{ page
+                        }}</a>
+                </li>
+                {% endfor %}
+
+                {% if veggies_page < total_veggies_pages %} <li class="page-item">
+                    <a class="page-link"
+                        href="{{ url_for('home', veggies_page=veggies_page + 1, type='veggies') }}">Next</a>
+                    </li>
+                    {% endif %}
+            </ul>
+        </nav>
+
+    </div>
+
+    <!-- Premade Boxes Section -->
+    <div id="boxesSection" {% if selected_type !='boxes' %}class="hidden" {% endif %}>
+        <h2 class="mt-4 mb-3">Premade Boxes</h2>
+        {% if user_type in ['customer', 'corporate_customer'] %}
+        <form method="POST" action="{{ url_for('add_to_order') }}">
+            <div class="form-group">
+                <label for="boxSizeSelect">Choose Box Size:</label>
+                <small class="form-text text-muted mb-2">
+                    Choose up to 3 veggies for Small, up to 4 veggies for Medium, and up to 5 veggies for Large.
+                </small>
+                <select id="boxSizeSelect" name="purchase_type" class="form-control w-25 mb-3">
+                    {% for box_size, num_of_boxes in premade_box_stock %}
+                    <option value="{{ box_size }}">
+                        {{ box_size.capitalize() }} ${{ 12 + (3 * (loop.index - 1)) }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <input type="hidden" name="item_name" value="Premade Box">
+            <input type="hidden" name="quantity" value="1">
+
+            <div id="veggieSelection">
+                <h5>Select Vegetables:</h5>
+                {% for veggie in all_veggies %}
+                <div class="form-check">
+                    <input class="form-check-input veggie-checkbox" type="checkbox" name="veggies[]"
+                        value="{{ veggie[0] }}" id="veggie{{ veggie[0] }}">
+                    <label class="form-check-label" for="veggie{{ veggie[0] }}">
+                        {{ veggie[0] }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-success mt-3">Add to Order</button>
+        </form>
+        {% elif user_type == 'staff' %}
+        <h5 class="mt-4 text-center">Stock Information</h5>
+        <div class="table-responsive mt-3">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">Box Size</th>
+                        <th class="text-center">Available Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for size, quantity in premade_box_stock %}
+                    <tr>
+                        <td class="text-center">{{ size | capitalize }}</td>
+                        <td class="text-center">
+                            <span class="badge {{ 'badge-danger' if quantity == 0 else 'badge-primary' }} badge-pill">
+                                {{ quantity }} boxes
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p><a href="{{ url_for('login') }}" class="btn btn-secondary">Login to Order</a></p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Display shopping cart only when user role is customer or corporate customer -->
+{% if user_type == 'customer' or user_type == 'corporate_customer' %}
+<!-- Order Container -->
+<div id="orderContainer">
+    <!-- Buttons to Toggle Order Section (Hide button moved to the top) -->
+    <div class="d-flex justify-content-end mb-3">
+        <button id="hideOrder" class="btn btn-dark {% if not session.get('order') %}hidden{% endif %}">Hide Shopping
+            Cart -</button>
+    </div>
+
+    <!-- Your Order Section -->
+    <div id="orderSection" class="{% if not session.get('order') %}hidden{% endif %}">
+        <h2>Your Shopping Cart</h2>
+        <ul class="list-group mb-4">
+            {% if session.get('order') %}
+            {% for item in session['order'] %}
+            <li class="list-group-item">
+                <!-- Flex container for item details -->
+                <!-- Flex container for item details -->
+                <div class="shopping-cart-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-column flex-grow-1">
+                        <span class="font-weight-bold"
+                            style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{
+                            item.item_name }}</span> <!-- Item name -->
+                        <span class="text-muted" style="white-space: nowrap;">by {{ item.purchase_type }}</span>
+                        <!-- Purchase type -->
+                    </div>
+                    <div class="ml-3 d-flex align-items-center">
+                        <span id="totalItemPriceDisplay{{ item.quantity }}" class="text-muted mr-2 small"
+                            style="white-space: nowrap;">Qty: {{ item.quantity }}</span> <!-- Quantity -->
+                        <span id="totalItemPriceDisplay{{ item.item_id }}" class="font-weight-bold"
+                            style="white-space: nowrap;">${{ item.total_price }}</span> <!-- Total price -->
+                    </div>
+                    <div>
+                        <button class="ml-4 btn btn-danger btn-sm remove-item" data-item-id="{{ item.item_id }}">
+                            <i class="fas fa-trash"></i> <!-- Garbage bin icon -->
+                        </button>
+                    </div>
+                </div>
+                <!-- Display selected veggies if they exist -->
+                {% if item.veggies %}
+                <div class="mt-2 small">
+                    {% if item.veggies is iterable %}
+                    <strong>Selected Vegetables:</strong>
+                    <ul>
+                        {% for veggie in item.veggies %}
+                        <li>{{ veggie }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+            {% else %}
+            <li class="list-group-item text-center">Your cart is empty.</li>
+            {% endif %}
+        </ul>
+
+        {% if session.get('order') and session['order'] | length >= 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+            <span class="font-weight-bold">Total Price:</span>
+            <span id="totalPriceDisplay" class="font-weight-bold">$ {{ total_order_price }}</span>
+        </div>
+        <a href="{{ url_for('checkout', total_order_price=total_order_price) }}" id="checkoutButton"
+            class="btn btn-primary">Proceed to Checkout</a>
+        {% else %}
+        <a id="checkoutButton" class="btn btn-primary" style="display: none;">Proceed to Checkout</a>
+        {% endif %}
+    </div>
+
+    <!-- Buttons to Toggle Order Section -->
+    <div class="d-flex justify-content-end mt-4">
+        <button id="showOrder" class="btn btn-info {% if session.get('order') %}hidden{% endif %}">Open Shopping Cart
+            +</button>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+    $(document).ready(function () {
+        // Toggle between vegetables and premade boxes
+        $('#itemTypeSelect').change(function () {
+            const selectedType = $(this).val();
+            $('#veggiesSection').toggleClass('hidden', selectedType !== 'veggies');
+            $('#boxesSection').toggleClass('hidden', selectedType !== 'boxes');
+        });
+
+        // Veggie quantity control
+        $(document).on('click', '.change-quantity', function () {
+            const action = $(this).data('action');
+            const quantityInput = $(this).siblings('input[name="quantity"]');
+            let currentQuantity = parseInt(quantityInput.val());
+
+            if (action === 'increase') {
+                currentQuantity++;
+            } else if (action === 'decrease' && currentQuantity > 1) {
+                currentQuantity--;
+            }
+
+            quantityInput.val(currentQuantity);
+            updateCheckoutButton(); // Update checkout button visibility
+        });
+
+        // Limit the selection of vegetables based on box size
+        const boxSizeSelect = $('#boxSizeSelect');
+        const veggieCheckboxes = $('.veggie-checkbox');
+
+        boxSizeSelect.change(function () {
+            const maxVeggies = {
+                'small': 3,
+                'medium': 4,
+                'large': 5
+            }[this.value];
+
+            veggieCheckboxes.prop('checked', false); // Uncheck all on size change
+
+            // Enable or disable checkboxes based on the selected box size
+            veggieCheckboxes.prop('disabled', false); // Enable all checkboxes initially
+
+            veggieCheckboxes.off('change').on('change', function () {
+                const selectedCount = veggieCheckboxes.filter(':checked').length;
+                if (selectedCount >= maxVeggies) {
+                veggieCheckboxes.not(':checked').prop('disabled', true); // Disable unchecked checkboxes
+            } else {
+                veggieCheckboxes.prop('disabled', false); // Enable all checkboxes if under the limit
+            }
+            });
+        });
+
+        // Show and hide order section
+        $('#showOrder').click(function () {
+            $('#orderSection').removeClass('hidden');
+            $(this).addClass('hidden');
+            $('#hideOrder').removeClass('hidden');
+        });
+
+        $('#hideOrder').click(function () {
+            $('#orderSection').addClass('hidden');
+            $(this).addClass('hidden');
+            $('#showOrder').removeClass('hidden');
+        });
+
+    });
+</script>
+
+<script>
+    function updatePrice(selectElement, item_name) {
+        const selectedType = selectElement.value;
+        let priceDisplay = document.getElementById(`price-${item_name}`);
+
+        // Fetch price based on selected type
+        let price;
+        if (selectedType === 'weight') {
+            price = 2;
+        } else if (selectedType === 'unit') {
+            price = 4;
+        } else if (selectedType === 'pack') {
+            price = 10;
+        }
+
+        // Update price display
+        priceDisplay.textContent = price ? `$${price}` : 'N/A';
+    }
+
+    // Function to initialize price on page load
+    function initializePrice() {
+        const selectElement = document.querySelector("select[name='purchase_type']");
+
+        updatePrice(selectElement);
+    }
+
+    // Add event listener to initialize price when the DOM is fully loaded
+    document.addEventListener("DOMContentLoaded", function () {
+        initializePrice();
+    });
+
+    // Event listener for remove item button
+    document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function () {
+            const itemId = this.getAttribute('data-item-id');
+
+            // Send AJAX request to remove the item from session
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/remove_from_order', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success) {
+                        console.log('Item removed successfully');
+                        // Remove the item from the UI
+                        const itemElement = button.closest('.d-flex'); // Get the closest parent element
+                        itemElement.remove(); // Remove the item element
+                        // Redirect to the same page with total order price as a query parameter
+                        window.location.href = `${window.location.pathname}?total_order_price=${response.total_order_price.toFixed(1)}`;
+                    }
+                }
+            };
+            xhr.send(`item_id=${itemId}`);
+        });
+    });
+</script>
+
+{% endblock %}

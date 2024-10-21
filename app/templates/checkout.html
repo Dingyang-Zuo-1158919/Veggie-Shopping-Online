@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .order-details,
+    .payment-method {
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .order-details {
+        background-color: #ffffff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .payment-method {
+        background-color: #e9ecef;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2,
+    h3 {
+        margin-bottom: 1rem;
+    }
+
+    .invalid-feedback {
+        font-weight: bold;
+        color: red;
+    }
+
+    .list-group-item:hover {
+    background-color: #f8f9fa; 
+    color: #343a40; 
+    cursor: pointer; 
+    }
+</style>
+
+<section class="container">
+    <div class="card mt-5 order-details">
+        <div class="card-body">
+            <h2>Your Order Details</h2>
+            <div class="d-flex justify-content-center">
+                <ul class="list-group mb-4 w-75">
+                    {% for item in order %}
+                    <li class="list-group-item d-flex flex-column">
+                        <div class="d-flex align-items-center mb-2">
+                            <h5 class="mb-0 mr-5">{{ item.item_name }}</h5>
+                            <strong class="mr-4 ml-4">Item Type:</strong> <span class="text-muted mr-4">{{
+                                item.purchase_type }}</span>
+                        </div>
+                        {% if item.veggies %}
+                        <div class="sm">
+                            <strong class="mt-2 mb-2 small">Selected Vegetables:</strong>
+                            <ul class="list-unstyled d-inline" style="font-size: 0.8rem;">
+                                {% for veggie in item.veggies %}
+                                <li class="d-inline">{{ veggie }}{% if not loop.last %}, {% endif %}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex align-items-left mb-2">
+                            <strong class="mr-4">Unit Price:</strong> <span class="text-muted mr-4">${{
+                                item.single_price }}</span>
+                            <strong class="mr-4">Quantity:</strong> <span class="text-muted mr-4">{{ item.quantity
+                                }}</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <strong class="mr-4">Total Price:</strong> <span class="text-muted mr-4">${{
+                                item.total_price }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="font-weight-bold text-success">Total Order Price: $<span id="totalOrderPrice">{{ total_order_price | round(2) }}</span></h3>
+                <div class="form-check ml-3">
+                    <input type="checkbox" class="form-check-input" id="addDeliveryFee" value="10">
+                    <label class="form-check-label" for="addDeliveryFee">Add $10 delivery fee</label>
+                </div>
+            </div>
+
+            {% if session['user_type'] == 'corporate_customer' %}
+            <h5 class="font-weight-bold">10% discount applied to corporate customer</h5>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card payment-method">
+        <div class="card-body">
+            <h3>Select Payment Method</h3>
+            <form method="POST" action="{{ url_for('checkout') }}" class="needs-validation">
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" id="credit_card" name="payment_method"
+                        value="credit_card" required>
+                    <label class="form-check-label" for="credit_card">Credit Card</label>
+                </div>
+
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" id="debit_card" name="payment_method"
+                        value="debit_card">
+                    <label class="form-check-label" for="debit_card">Debit Card</label>
+                </div>
+
+                <div class="form-check">
+                    <input type="radio" class="form-check-input" id="account" name="payment_method" value="account">
+                    <label class="form-check-label" for="account">Charge to Account</label>
+                </div>
+
+                <div id="card-details" style="display:none; margin-top: 20px;">
+                    <h4>Credit Card Payment Details</h4>
+                    <div class="form-group">
+                        <label for="credit_card_number">Card Number (16 digits)</label>
+                        <input type="text" class="form-control" id="credit_card_number" name="credit_card_number"
+                            pattern="\d{16}">
+                        <div class="invalid-feedback">
+                            Card number must be exactly 16 digits. Please check and try again.
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="card_expiry_date">Expiry Date MM/YY (e.g., 12/25)</label>
+                        <input type="text" class="form-control" id="card_expiry_date" name="card_expiry_date"
+                            pattern="(0[1-9]|1[0-2])\/?([0-9]{2})" placeholder="MM/YY">
+                        <div class="invalid-feedback">
+                            Enter a valid expiry date in the format MM/YY (e.g., 12/25).
+                        </div>
+                    </div>
+                </div>
+
+                <div id="debit-details" style="display:none; margin-top: 20px;">
+                    <h4>Debit Card Payment Details</h4>
+                    <div class="form-group">
+                        <label for="debit_card_number">Card Number (16 digits)</label>
+                        <input type="text" class="form-control" id="debit_card_number" name="debit_card_number"
+                            pattern="\d{16}">
+                    </div>
+                    <div class="form-group">
+                        <label for="bank_name">Bank Name</label>
+                        <input type="text" class="form-control" id="bank_name" name="bank_name" required>
+                        <div class="invalid-feedback">
+                            Bank name is required.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary">Back</a>
+                    <button type="submit" class="btn btn-primary">Process</button>
+                    <input type="hidden" name="total_order_price" id="hiddenTotalPrice" value="{{ total_order_price }}">
+                    <input type="hidden" name="total_quantity" value="{{ total_quantity }}">
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    // Show card details based on selected payment method
+    document.addEventListener('DOMContentLoaded', function () {
+        const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+        const cardDetails = document.getElementById('card-details');
+        const debitDetails = document.getElementById('debit-details');
+
+        paymentMethods.forEach(function (method) {
+            method.addEventListener('change', function () {
+                // Reset all fields before showing the relevant ones
+                document.getElementById('credit_card_number').value = '';
+                document.getElementById('card_expiry_date').value = '';
+                document.getElementById('bank_name').value = '';
+                document.getElementById('debit_card_number').value = '';
+
+                // Hide all details initially
+                cardDetails.style.display = 'none';
+                debitDetails.style.display = 'none';
+
+                // Remove required attributes from all fields
+                document.getElementById('credit_card_number').removeAttribute('required');
+                document.getElementById('card_expiry_date').removeAttribute('required');
+                document.getElementById('debit_card_number').removeAttribute('required');
+                document.getElementById('bank_name').removeAttribute('required');
+
+                // Show relevant fields and adjust required attributes
+                if (method.value === 'credit_card') {
+                    cardDetails.style.display = 'block';
+                    debitDetails.style.display = 'none';
+
+                    // Set required attributes for credit card fields
+                    document.getElementById('credit_card_number').setAttribute('required', 'required');
+                    document.getElementById('card_expiry_date').setAttribute('required', 'required');
+                } else if (method.value === 'debit_card') {
+                    debitDetails.style.display = 'block';
+                    cardDetails.style.display = 'none';
+
+                    // Set required attributes for debit card fields
+                    document.getElementById('debit_card_number').setAttribute('required', 'required');
+                    document.getElementById('bank_name').setAttribute('required', 'required');
+                }
+            });
+        });
+    });
+
+    // Delivery fee updated dynamically
+    document.addEventListener('DOMContentLoaded', function () {
+        const addDeliveryFeeCheckbox = document.getElementById('addDeliveryFee');
+        const totalOrderPriceElement = document.getElementById('totalOrderPrice');
+        const hiddenTotalPriceInput = document.getElementById('hiddenTotalPrice');
+        let baseOrderPrice = parseFloat(totalOrderPriceElement.innerText); // Store the base price
+
+        addDeliveryFeeCheckbox.addEventListener('change', function () {
+            let updatedPrice = baseOrderPrice;
+
+            if (this.checked) {
+                updatedPrice += parseFloat(this.value);
+            }
+
+            totalOrderPriceElement.innerText = updatedPrice.toFixed(2); // Update the visible price
+            hiddenTotalPriceInput.value = updatedPrice; // Update the hidden input for form submission
+        });
+    });
+
+</script>
+
+{% endblock %}

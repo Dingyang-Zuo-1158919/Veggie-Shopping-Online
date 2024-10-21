@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title text-center">User Profile</h3>
+                </div>
+                <div class="card-body">
+                    {% if user_type == 'customer' %}
+                        <h5 class="text-primary">Customer Details</h5>
+                        <table class="table table-hover mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>User Name:</th>
+                                    <td>{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>{{ user.cust_address }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Current Balance:</th>
+                                    <td>${{ user.cust_balance }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Max Owing:</th>
+                                    <td>${{ user.max_owing }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% elif user_type == 'corporate_customer' %}
+                        <h5 class="text-primary">Corporate Customer Details</h5>
+                        <table class="table table-hover mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>User Name:</th>
+                                    <td>{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Address:</th>
+                                    <td>{{ user.cust_address }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Current Balance:</th>
+                                    <td>${{ user.cust_balance }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Max Owing:</th>
+                                    <td>${{ user.max_owing }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Discount Rate:</th>
+                                    <td>{{ user.discount_rate }}%</td>
+                                </tr>
+                                <tr>
+                                    <th>Max Credit:</th>
+                                    <td>${{ user.max_credit }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Min Balance:</th>
+                                    <td>${{ user.min_balance }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% elif user_type == 'staff' %}
+                        <h5 class="text-primary">Staff Details</h5>
+                        <table class="table table-hover mt-3">
+                            <tbody>
+                                <tr>
+                                    <th>User Name:</th>
+                                    <td>{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Date Joined:</th>
+                                    <td>{{ user.date_joined }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Department:</th>
+                                    <td>{{ user.dept_name }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

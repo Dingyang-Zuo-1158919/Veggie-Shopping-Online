@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Sales Performance{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+    <!-- Current Sales Performance Section -->
+    <h3 class="text-center mb-4">Current Sales Performance</h3>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Weekly Sales</h5>
+                    <p class="card-text">${{ current_sales_data.weekly_sales_amount }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Monthly Sales</h5>
+                    <p class="card-text">${{ current_sales_data.monthly_sales_amount }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Annual Sales</h5>
+                    <p class="card-text">${{ current_sales_data.annual_sales_amount }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Display Top 10 Items Section -->
+    <div class="mt-5">
+        <h3 class="text-center mb-4">Top 10 Best-Selling Items</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Item Name</th>
+                    <th scope="col">Item Type</th>
+                    <th scope="col">Total Sold</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in current_sales_data['top_items'] %}
+                <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.item_type }}</td>
+                    <td>{{ item.total_sold }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Form to select month and year -->
+    <h4 class="mt-5">Select Month and Year for Sales Performance Record</h4>
+    <form method="GET" action="/sales_performance" class="mt-4">
+        <div class="form-group">
+            <label for="year_or_month">Choose to View by Year or Month</label>
+            <select id="year_or_month" name="year_or_month" class="form-control" onchange="toggleSelections()">
+                <option value="">-- Select Option --</option>
+                <option value="year" {% if year_or_month=='year' %}selected{% endif %}>Year</option>
+                <option value="month" {% if year_or_month=='month' %}selected{% endif %}>Month</option>
+            </select>
+        </div>
+
+        <!-- Year selection -->
+        <div class="form-group" id="year-select" style="display: none;">
+            <label for="year">Year</label>
+            <select id="year" name="year" class="form-control">
+                <option value="">-- Select Year --</option>
+                {% for y in range(2020, current_year + 1) %}
+                <option value="{{ y }}" {% if selected_year==y or current_year==y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Month selection -->
+        <div class="form-group" id="month-select" style="display: none;">
+            <label for="month">Month</label>
+            <select id="month" name="month" class="form-control">
+                <option value="">-- Select Month --</option>
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if selected_month==m or current_month==m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Search button -->
+        <button type="submit" class="btn btn-primary mt-3" id="search-button" style="display: none;">Search</button>
+    </form>
+
+    <!-- JavaScript to toggle between year and month selection -->
+    <script>
+        function toggleSelections() {
+            var yearOrMonth = document.getElementById('year_or_month').value;
+            var yearSelect = document.getElementById('year-select');
+            var monthSelect = document.getElementById('month-select');
+            var searchButton = document.getElementById('search-button');
+
+            // Reset selections
+            document.getElementById('year').selectedIndex = 0; // Reset year selection
+            document.getElementById('month').selectedIndex = 0; // Reset month selection
+
+            // Show/hide selections based on user choice
+            if (yearOrMonth === 'year') {
+                yearSelect.style.display = 'block';
+                monthSelect.style.display = 'none';
+                searchButton.style.display = 'block'; // Show the search button
+            } else if (yearOrMonth === 'month') {
+                yearSelect.style.display = 'block';
+                monthSelect.style.display = 'block';
+                searchButton.style.display = 'block'; // Show the search button
+            } else {
+                yearSelect.style.display = 'none';
+                monthSelect.style.display = 'none';
+                searchButton.style.display = 'none'; // Hide the search button
+            }
+        }
+    </script>
+
+    <!-- Display selected sales data if available -->
+    {% if sales_data %}
+    <div class="mt-5">
+        <h3 class="text-center mb-4">Sales Report</h3>
+        <div class="row">
+            {% if view_choice == 'year' %}
+            <div class="col-md-6 offset-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Annual Sales</h5>
+                        <p class="card-text">
+                            <strong>Year:</strong> {{ sales_data['current_year'] }}<br>
+                            <strong>Amount:</strong> ${{ sales_data['annual_sales_amount'] }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% elif view_choice == 'month' %}
+            <div class="col-md-6 offset-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Monthly Sales</h5>
+                        <p class="card-text">
+                            <strong>Month:</strong> {{ sales_data['current_month'] }}<br>
+                            <strong>Amount:</strong> ${{ sales_data['monthly_sales_amount'] }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Display Top 10 Items Section for selected year/month -->
+    <div class="mt-5">
+        <h3 class="text-center mb-4">
+            Top 10 Best-Selling Items for 
+            {% if sales_data['current_month'] %}
+            {{ sales_data['current_month'] }}
+            {% else %}
+            {{ sales_data['current_year'] }}
+            {% endif %}
+        </h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Item Name</th>
+                    <th scope="col">Item Type</th>
+                    <th scope="col">Total Sold</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in sales_data['top_items'] %}
+                <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ item.item_name }}</td>
+                    <td>{{ item.item_type }}</td>
+                    <td>{{ item.total_sold }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

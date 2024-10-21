@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Customer Management{% endblock %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Customer Management</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <ul class="list-group mb-4">
+                {% for customer in customers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center 
+                        {% if customer.id in corporate_customer_ids %} bg-warning {% else %} bg-info {% endif %}">
+                        <div>
+                            <h5 class="mb-1">{{ customer.first_name }} {{ customer.last_name }}</h5>
+                            <div class="mb-1">
+                                <span class="font-weight-bold mr-2 mt-2">Address:</span> {{ customer.cust_address }}<br/>
+                                <span class="font-weight-bold mr-2">Balance:</span> ${{ customer.cust_balance }}
+                                {% if customer.id in corporate_customer_ids %}
+                                    <span class="font-weight-bold mr-2 ml-5">Discount Rate:</span> {{ customer.discount_rate }}<br/>
+                                    <span class="font-weight-bold mr-2">Max Credit:</span> ${{ customer.max_credit }}
+                                    <span class="font-weight-bold mr-2 ml-5">Min Balance:</span> ${{ customer.min_balance }}
+                                {% else %}
+                                    <span class="font-weight-bold mr-2 ml-5">Max Owing:</span> {{ customer.max_owing }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if customer.id in corporate_customer_ids %}
+                            <span class="badge badge-primary">Corporate</span>
+                        {% else %}
+                            <span class="badge badge-secondary">Individual</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+{% endblock %}
